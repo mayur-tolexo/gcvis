@@ -42,4 +42,5 @@ type GCtrace struct {
 	MASBGcpu     float64
 	MASIdlecpu   float64
 	STWMcpu      float64
+	GCCycle      int64
 }

@@ -40,11 +40,34 @@ const (
 		},
 	};
 
+	var gccycle_data = [
+		{ label: "gc.cycle", data: {{ .GCCycle }} }
+	];
+
+	var gccycle_options = {
+		legend: {
+			position: "nw",
+			noColumns: 2,
+			backgroundOpacity: 0.2
+		},
+		yaxis: {
+			tickFormatter: function(val) { return val + "Count"; }
+		},
+		xaxis: {
+			tickFormatter: function(val) { return val + "s"; }
+		},
+		selection: {
+			mode: "x"
+		},
+	};
+
 	var clockgraph_data = [
 		{ label: "STW sweep clock", data: {{ .STWSclock }} },
 		{ label: "con mas clock", data: {{ .MASclock }} },
 		{ label: "STW mark clock", data: {{ .STWMclock }} },
 	];
+
+	
 	var cpugraph_data = [
 		{ label: "STW sweep cpu", data: {{ .STWScpu }} },
 		{ label: "con mas assist cpu", data: {{ .MASAssistcpu }} },
@@ -80,6 +103,7 @@ const (
 
 	$(document).ready(function() {
 		var datagraph = $.plot("#datagraph", datagraph_data, datagraph_options);
+		var gccycle = $.plot("#gccycle", gccycle_data, gccycle_options);
 		var clockgraph = $.plot("#clockgraph", clockgraph_data, timingsgraph_options);
 		var cpugraph = $.plot("#cpugraph", cpugraph_data, timingsgraph_options);
 
@@ -123,6 +147,7 @@ const (
 			// don't fire event on the overview to prevent eternal loop
 			overview.setSelection(ranges, true);
 			clockgraph.setSelection(ranges, true);
+			gccycle.setSelection(ranges, true);
 			cpugraph.setSelection(ranges, true);
 		});
 
@@ -137,6 +162,25 @@ const (
 			clockgraph.setupGrid();
 			clockgraph.draw();
 			clockgraph.clearSelection();
+
+			// don't fire event on the overview to prevent eternal loop
+
+			overview.setSelection(ranges, true);
+			datagraph.setSelection(ranges, true);
+			cpugraph.setSelection(ranges, true);
+		});
+
+		$("#gccycle").bind("plotselected", function (event, ranges) {
+
+			// do the zooming
+			$.each(gccycle.getXAxes(), function(_, axis) {
+				var opts = axis.options;
+				opts.min = ranges.xaxis.from;
+				opts.max = ranges.xaxis.to;
+			});
+			gccycle.setupGrid();
+			gccycle.draw();
+			gccycle.clearSelection();
 
 			// don't fire event on the overview to prevent eternal loop
 
@@ -167,6 +211,7 @@ const (
 		$("#overview").bind("plotselected", function (event, ranges) {
 			datagraph.setSelection(ranges);
 			clockgraph.setSelection(ranges);
+			gccycle.setSelection(ranges);
 			cpugraph.setSelection(ranges);
 		});
 
@@ -188,6 +233,9 @@ const (
 					{ label: "con mas clock",      data: graphData.MASclock },
 					{ label: "STW mark clock",     data: graphData.STWMclock },
 				];
+				var gccycle_data = [
+					{ label: "gc.cycle", data: graphData.GCCycle },
+				];
 				var cpugraph_data = [
 					{ label: "STW sweep cpu",      data: graphData.STWScpu },
 					{ label: "con mas assist cpu", data: graphData.MASAssistcpu },
@@ -203,6 +251,10 @@ const (
 				clockgraph.setData(clockgraph_data);
 				clockgraph.setupGrid();
 				clockgraph.draw();
+
+				gccycle.setData(gccycle_data);
+				gccycle.setupGrid();
+				gccycle.draw();
 
 				cpugraph.setData(cpugraph_data);
 				cpugraph.setupGrid();
@@ -308,6 +360,10 @@ dd { margin-left: 160px; }
 
 	<div class="graph-container">
 		<div id="datagraph" class="demo-placeholder"></div>
+	</div>
+
+	<div class="small-graph-container">
+		<div id="gccycle" class="demo-placeholder"></div>
 	</div>
 
 	<div class="small-graph-container">

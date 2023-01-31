@@ -33,6 +33,7 @@ func TestParserWithMatchingInputGo19(t *testing.T) {
 		MASIdlecpu:   3243,
 		STWMcpu:      6.0,
 		Stack:        6.0,
+		GCCycle:      763,
 	}
 
 	select {

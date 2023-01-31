@@ -11,7 +11,7 @@ const (
 	GCRegexpGo14 = `gc\d+\(\d+\): ([\d.]+\+?)+ us, \d+ -> (?P<Heap1>\d+) MB, \d+ \(\d+-\d+\) objects,( \d+ goroutines,)? \d+\/\d+\/\d+ sweeps, \d+\(\d+\) handoff, \d+\(\d+\) steal, \d+\/\d+\/\d+ yields`
 	GCRegexpGo15 = `gc #?\d+ @(?P<ElapsedTime>[\d.]+)s \d+%: [\d.+/]+ ms clock, [\d.+/]+ ms cpu, \d+->\d+->\d+ MB, (?P<Heap1>\d+) MB goal, \d+ P`
 	GCRegexpGo16 = `gc #?\d+ @(?P<ElapsedTime>[\d.]+)s \d+%: (?P<STWSclock>[^+]+)\+(?P<MASclock>[^+]+)\+(?P<STWMclock>[^+]+) ms clock, (?P<STWScpu>[^+]+)\+(?P<MASAssistcpu>[^+]+)/(?P<MASBGcpu>[^+]+)/(?P<MASIdlecpu>[^+]+)\+(?P<STWMcpu>[^+]+) ms cpu, \d+->\d+->\d+ MB, (?P<Heap1>\d+) MB goal, \d+ P`
-	GCRegexpGo19 = `gc #?\d+ @(?P<ElapsedTime>[\d.]+)s \d+%: (?P<STWSclock>[^+]+)\+(?P<MASclock>[^+]+)\+(?P<STWMclock>[^+]+) ms clock, (?P<STWScpu>[^+]+)\+(?P<MASAssistcpu>[^+]+)/(?P<MASBGcpu>[^+]+)/(?P<MASIdlecpu>[^+]+)\+(?P<STWMcpu>[^+]+) ms cpu, \d+->\d+->\d+ MB, (?P<Heap1>\d+) MB goal, (?P<Stack>\d+) MB stacks, (\d+) MB globals, \d+ P`
+	GCRegexpGo19 = `gc (?P<GCCycle>\d+) @(?P<ElapsedTime>[\d.]+)s \d+%: (?P<STWSclock>[^+]+)\+(?P<MASclock>[^+]+)\+(?P<STWMclock>[^+]+) ms clock, (?P<STWScpu>[^+]+)\+(?P<MASAssistcpu>[^+]+)/(?P<MASBGcpu>[^+]+)/(?P<MASIdlecpu>[^+]+)\+(?P<STWMcpu>[^+]+) ms cpu, \d+->\d+->\d+ MB, (?P<Heap1>\d+) MB goal, (?P<Stack>\d+) MB stacks, (\d+) MB globals, \d+ P`
 
 	SCVGRegexp = `scvg\d+: inuse: (?P<inuse>\d+), idle: (?P<idle>\d+), sys: (?P<sys>\d+), released: (?P<released>\d+), consumed: (?P<consumed>\d+) \(MB\)`
 )
@@ -99,6 +99,7 @@ func parseGCTrace(gcre *regexp.Regexp, matches []string) *GCtrace {
 		MASIdlecpu:   silentParseFloat(matchMap["MASIdlecpu"]),
 		STWMcpu:      silentParseFloat(matchMap["STWMcpu"]),
 		Stack:        silentParseInt(matchMap["Stack"]),
+		GCCycle:      silentParseInt(matchMap["GCCycle"]),
 	}
 }
 
