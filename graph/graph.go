@@ -1,4 +1,4 @@
-package main
+package graph
 
 import (
 	"html/template"
@@ -11,7 +11,7 @@ type graphPoints [2]float64
 
 type Graph struct {
 	Title                               string
-	HeapUse, ScvgInuse, ScvgIdle        []graphPoints
+	HeapUse, ScvgInuse, ScvgIdle, Stack []graphPoints
 	ScvgSys, ScvgReleased, ScvgConsumed []graphPoints
 	STWSclock                           []graphPoints
 	MASclock                            []graphPoints
@@ -31,6 +31,7 @@ func NewGraph(title, tmpl string) Graph {
 	g := Graph{
 		Title:        title,
 		HeapUse:      []graphPoints{},
+		Stack:        []graphPoints{},
 		ScvgInuse:    []graphPoints{},
 		ScvgIdle:     []graphPoints{},
 		ScvgSys:      []graphPoints{},
@@ -60,7 +61,7 @@ func (g *Graph) Write(w io.Writer) error {
 	return g.Tmpl.Execute(w, g)
 }
 
-func (g *Graph) AddGCTraceGraphPoint(gcTrace *gctrace) {
+func (g *Graph) AddGCTraceGraphPoint(gcTrace *GCtrace) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	var elapsedTime float64
@@ -70,6 +71,7 @@ func (g *Graph) AddGCTraceGraphPoint(gcTrace *gctrace) {
 		elapsedTime = gcTrace.ElapsedTime
 	}
 	g.HeapUse = append(g.HeapUse, graphPoints{elapsedTime, float64(gcTrace.Heap1)})
+	g.Stack = append(g.Stack, graphPoints{elapsedTime, float64(gcTrace.Stack)})
 	g.STWSclock = append(g.STWSclock, graphPoints{elapsedTime, float64(gcTrace.STWSclock)})
 	g.MASclock = append(g.MASclock, graphPoints{elapsedTime, float64(gcTrace.MASclock)})
 	g.STWMclock = append(g.STWMclock, graphPoints{elapsedTime, float64(gcTrace.STWMclock)})

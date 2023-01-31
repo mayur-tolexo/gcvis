@@ -1,4 +1,4 @@
-package main
+package graph
 
 import (
 	"bytes"
@@ -16,12 +16,41 @@ func runParserWith(line string) *Parser {
 	return parser
 }
 
+func TestParserWithMatchingInputGo19(t *testing.T) {
+	line := "gc 763 @77536.239s 1%: 0.11+2192+0.75 ms clock, 0.92+9269/4379/3243+6.0 ms cpu, 6370->6390->3298 MB, 6533 MB goal, 6 MB stacks, 0 MB globals, 8 P"
+
+	runParserWith(line)
+
+	expectedGCTrace := &GCtrace{
+		Heap1:        6533,
+		ElapsedTime:  77536.239,
+		STWSclock:    0.11,
+		MASclock:     2192,
+		STWMclock:    0.75,
+		STWScpu:      0.92,
+		MASAssistcpu: 9269,
+		MASBGcpu:     4379,
+		MASIdlecpu:   3243,
+		STWMcpu:      6.0,
+		Stack:        6.0,
+	}
+
+	select {
+	case gctrace := <-parser.GcChan:
+		if !reflect.DeepEqual(gctrace, expectedGCTrace) {
+			t.Errorf("Expected gctrace to equal %+v. Got %+v instead.", expectedGCTrace, gctrace)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("Execution timed out.")
+	}
+}
+
 func TestParserWithMatchingInputGo16(t *testing.T) {
 	line := "gc 763 @77536.239s 1%: 0.11+2192+0.75 ms clock, 0.92+9269/4379/3243+6.0 ms cpu, 6370->6390->3298 MB, 6533 MB goal, 8 P"
 
 	runParserWith(line)
 
-	expectedGCTrace := &gctrace{
+	expectedGCTrace := &GCtrace{
 		Heap1:        6533,
 		ElapsedTime:  77536.239,
 		STWSclock:    0.11,
@@ -49,7 +78,7 @@ func TestParserWithMatchingInputGo15(t *testing.T) {
 
 	runParserWith(line)
 
-	expectedGCTrace := &gctrace{
+	expectedGCTrace := &GCtrace{
 		Heap1:       33,
 		ElapsedTime: 3.243,
 	}
@@ -69,7 +98,7 @@ func TestParserWithMatchingInputGo14(t *testing.T) {
 
 	runParserWith(line)
 
-	expectedGCTrace := &gctrace{
+	expectedGCTrace := &GCtrace{
 		Heap1: 3,
 	}
 
@@ -88,7 +117,7 @@ func TestParserGoRoutinesInputGo14(t *testing.T) {
 
 	runParserWith(line)
 
-	expectedGCTrace := &gctrace{
+	expectedGCTrace := &GCtrace{
 		Heap1: 3,
 	}
 
@@ -147,7 +176,7 @@ func TestParserWait(t *testing.T) {
 	parser := runParserWith(line)
 
 	select {
-	case <-parser.done:
+	case <-parser.Done:
 		return
 	case <-time.After(100 * time.Millisecond):
 		t.Fatalf("Execution timed out.")

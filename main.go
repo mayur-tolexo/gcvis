@@ -3,7 +3,7 @@
 //
 // usage:
 //
-//     gcvis program [arguments]...
+//	gcvis program [arguments]...
 package main
 
 import (
@@ -14,6 +14,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mayur-tolexo/gcvis/exec"
+	"github.com/mayur-tolexo/gcvis/graph"
+	"github.com/mayur-tolexo/gcvis/server"
 	"github.com/pkg/browser"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -21,6 +24,7 @@ import (
 
 var iface = flag.String("i", "127.0.0.1", "specify interface to use. defaults to 127.0.0.1.")
 var port = flag.String("p", "0", "specify port to use.")
+var filename = flag.String("f", "", "filename of the log file")
 var openBrowser = flag.Bool("o", true, "automatically open browser")
 
 func main() {
@@ -30,31 +34,41 @@ func main() {
 	}
 
 	var pipeRead io.ReadCloser
-	var subcommand *SubCommand
+	var subcommand *exec.SubCommand
 
 	flag.Parse()
-	if len(flag.Args()) < 1 {
-		if terminal.IsTerminal(int(os.Stdin.Fd())) {
-			flag.Usage()
+	if filename != nil {
+		file, err := os.Open(*filename)
+		if err != nil {
+			fmt.Println(err)
 			return
-		} else {
-			pipeRead = os.Stdin
 		}
+		defer file.Close()
+		pipeRead = file
 	} else {
-		subcommand = NewSubCommand(flag.Args())
-		pipeRead = subcommand.PipeRead
-		go subcommand.Run()
+		if len(flag.Args()) < 1 {
+			if terminal.IsTerminal(int(os.Stdin.Fd())) {
+				flag.Usage()
+				return
+			} else {
+				pipeRead = os.Stdin
+			}
+		} else {
+			subcommand = exec.NewSubCommand(flag.Args())
+			pipeRead = subcommand.PipeRead
+			go subcommand.Run()
+		}
 	}
 
-	parser := NewParser(pipeRead)
+	parser := graph.NewParser(pipeRead)
 
 	title := strings.Join(flag.Args(), " ")
 	if len(title) == 0 {
 		title = fmt.Sprintf("%s:%s", *iface, *port)
 	}
 
-	gcvisGraph := NewGraph(title, GCVIS_TMPL)
-	server := NewHttpServer(*iface, *port, &gcvisGraph)
+	gcvisGraph := graph.NewGraph(title, graph.GCVIS_TMPL)
+	server := server.NewHttpServer(*iface, *port, &gcvisGraph)
 
 	go parser.Run()
 	go server.Start()
@@ -76,13 +90,15 @@ func main() {
 			gcvisGraph.AddScavengerGraphPoint(scvgTrace)
 		case output := <-parser.NoMatchChan:
 			fmt.Fprintln(os.Stderr, output)
-		case <-parser.done:
-			if parser.Err != nil {
-				fmt.Fprintf(os.Stderr, parser.Err.Error())
-				os.Exit(1)
-			}
+		case <-parser.Done:
+			if filename == nil {
+				if parser.Err != nil {
+					fmt.Fprintf(os.Stderr, parser.Err.Error())
+					os.Exit(1)
+				}
 
-			os.Exit(0)
+				os.Exit(0)
+			}
 		}
 	}
 

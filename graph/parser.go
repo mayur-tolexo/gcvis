@@ -1,4 +1,4 @@
-package main
+package graph
 
 import (
 	"bufio"
@@ -11,6 +11,7 @@ const (
 	GCRegexpGo14 = `gc\d+\(\d+\): ([\d.]+\+?)+ us, \d+ -> (?P<Heap1>\d+) MB, \d+ \(\d+-\d+\) objects,( \d+ goroutines,)? \d+\/\d+\/\d+ sweeps, \d+\(\d+\) handoff, \d+\(\d+\) steal, \d+\/\d+\/\d+ yields`
 	GCRegexpGo15 = `gc #?\d+ @(?P<ElapsedTime>[\d.]+)s \d+%: [\d.+/]+ ms clock, [\d.+/]+ ms cpu, \d+->\d+->\d+ MB, (?P<Heap1>\d+) MB goal, \d+ P`
 	GCRegexpGo16 = `gc #?\d+ @(?P<ElapsedTime>[\d.]+)s \d+%: (?P<STWSclock>[^+]+)\+(?P<MASclock>[^+]+)\+(?P<STWMclock>[^+]+) ms clock, (?P<STWScpu>[^+]+)\+(?P<MASAssistcpu>[^+]+)/(?P<MASBGcpu>[^+]+)/(?P<MASIdlecpu>[^+]+)\+(?P<STWMcpu>[^+]+) ms cpu, \d+->\d+->\d+ MB, (?P<Heap1>\d+) MB goal, \d+ P`
+	GCRegexpGo19 = `gc #?\d+ @(?P<ElapsedTime>[\d.]+)s \d+%: (?P<STWSclock>[^+]+)\+(?P<MASclock>[^+]+)\+(?P<STWMclock>[^+]+) ms clock, (?P<STWScpu>[^+]+)\+(?P<MASAssistcpu>[^+]+)/(?P<MASBGcpu>[^+]+)/(?P<MASIdlecpu>[^+]+)\+(?P<STWMcpu>[^+]+) ms cpu, \d+->\d+->\d+ MB, (?P<Heap1>\d+) MB goal, (?P<Stack>\d+) MB stacks, (\d+) MB globals, \d+ P`
 
 	SCVGRegexp = `scvg\d+: inuse: (?P<inuse>\d+), idle: (?P<idle>\d+), sys: (?P<sys>\d+), released: (?P<released>\d+), consumed: (?P<consumed>\d+) \(MB\)`
 )
@@ -19,15 +20,16 @@ var (
 	gcrego14 = regexp.MustCompile(GCRegexpGo14)
 	gcrego15 = regexp.MustCompile(GCRegexpGo15)
 	gcrego16 = regexp.MustCompile(GCRegexpGo16)
+	gcrego19 = regexp.MustCompile(GCRegexpGo19)
 	scvgre   = regexp.MustCompile(SCVGRegexp)
 )
 
 type Parser struct {
 	reader      io.Reader
-	GcChan      chan *gctrace
+	GcChan      chan *GCtrace
 	ScvgChan    chan *scvgtrace
 	NoMatchChan chan string
-	done        chan bool
+	Done        chan bool
 
 	Err error
 
@@ -37,10 +39,10 @@ type Parser struct {
 func NewParser(r io.Reader) *Parser {
 	return &Parser{
 		reader:      r,
-		GcChan:      make(chan *gctrace, 1),
+		GcChan:      make(chan *GCtrace, 1),
 		ScvgChan:    make(chan *scvgtrace, 1),
 		NoMatchChan: make(chan string, 1),
-		done:        make(chan bool),
+		Done:        make(chan bool),
 	}
 }
 
@@ -49,6 +51,11 @@ func (p *Parser) Run() {
 
 	for sc.Scan() {
 		line := sc.Text()
+		if result := gcrego19.FindStringSubmatch(line); result != nil {
+			p.GcChan <- parseGCTrace(gcrego19, result)
+			continue
+		}
+
 		if result := gcrego16.FindStringSubmatch(line); result != nil {
 			p.GcChan <- parseGCTrace(gcrego16, result)
 			continue
@@ -74,13 +81,13 @@ func (p *Parser) Run() {
 
 	p.Err = sc.Err()
 
-	close(p.done)
+	close(p.Done)
 }
 
-func parseGCTrace(gcre *regexp.Regexp, matches []string) *gctrace {
+func parseGCTrace(gcre *regexp.Regexp, matches []string) *GCtrace {
 	matchMap := getMatchMap(gcre, matches)
 
-	return &gctrace{
+	return &GCtrace{
 		Heap1:        silentParseInt(matchMap["Heap1"]),
 		ElapsedTime:  silentParseFloat(matchMap["ElapsedTime"]),
 		STWSclock:    silentParseFloat(matchMap["STWSclock"]),
@@ -91,6 +98,7 @@ func parseGCTrace(gcre *regexp.Regexp, matches []string) *gctrace {
 		MASBGcpu:     silentParseFloat(matchMap["MASBGcpu"]),
 		MASIdlecpu:   silentParseFloat(matchMap["MASIdlecpu"]),
 		STWMcpu:      silentParseFloat(matchMap["STWMcpu"]),
+		Stack:        silentParseInt(matchMap["Stack"]),
 	}
 }
 

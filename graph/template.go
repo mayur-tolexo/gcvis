@@ -1,4 +1,4 @@
-package main
+package graph
 
 const (
 	GCVIS_TMPL = `
@@ -15,6 +15,7 @@ const (
 (function() {
 	var datagraph_data = [
 		{ label: "gc.heapinuse", data: {{ .HeapUse }} },
+		{ label: "gc.stack", data: {{ .Stack }} },
 		{ label: "scvg.inuse", data: {{ .ScvgInuse }} },
 		{ label: "scvg.idle", data: {{ .ScvgIdle }} },
 		{ label: "scvg.sys", data: {{ .ScvgSys }} },
@@ -329,6 +330,7 @@ dd { margin-left: 160px; }
 <dl>
 
 <dt>gc.heapinuse  </dt><dd> heap in use after gc</dd>
+<dt>gc.stack  </dt><dd> stack in use</dd>
 <dt>scvg.inuse    </dt><dd> virtual memory considered in use by the scavenger</dd>
 <dt>scvg.idle     </dt><dd> virtual memory considered unused by the scavenger</dd>
 <dt>scvg.sys      </dt><dd> virtual memory requested from the operating system (should aproximate VSS)</dd>

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestHttpServerListener(t *testing.T) {
-	graph := NewGraph("fake title", GCVIS_TMPL)
+	graph := graph.NewGraph("fake title", graph.GCVIS_TMPL)
 	server := NewHttpServer("127.0.0.1", "0", &graph)
 
 	url := server.Url()
@@ -21,8 +21,8 @@ func TestHttpServerListener(t *testing.T) {
 }
 
 func TestHttpServerResponse(t *testing.T) {
-	graph := NewGraph("fake title", GCVIS_TMPL)
-	graph.AddGCTraceGraphPoint(&gctrace{})
+	graph := graph.NewGraph("fake title", graph.GCVIS_TMPL)
+	graph.AddGCTraceGraphPoint(&graph.GCtrace{})
 	server := NewHttpServer("127.0.0.1", "0", &graph)
 
 	go server.Start()

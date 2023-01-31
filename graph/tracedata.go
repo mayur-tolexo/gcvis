@@ -1,4 +1,4 @@
-package main
+package graph
 
 type scvgtrace struct {
 	ElapsedTime float64 // in seconds
@@ -9,7 +9,7 @@ type scvgtrace struct {
 	consumed    int64
 }
 
-type gctrace struct {
+type GCtrace struct {
 	ElapsedTime  float64 // in seconds
 	NumGC        int64
 	Nproc        int64
@@ -19,6 +19,7 @@ type gctrace struct {
 	t4           int64
 	Heap0        int64 // heap size before, in megabytes
 	Heap1        int64 // heap size after, in megabytes
+	Stack        int64
 	Obj          int64
 	NMalloc      int64
 	NFree        int64

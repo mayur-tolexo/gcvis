@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/mayur-tolexo/gcvis/graph"
 )
 
 type HttpServer struct {
-	graph    *Graph
+	graph    *graph.Graph
 	listener net.Listener
 	iface    string
 	port     string
@@ -19,7 +21,7 @@ type HttpServer struct {
 	listenerMtx sync.Mutex
 }
 
-func NewHttpServer(iface string, port string, graph *Graph) *HttpServer {
+func NewHttpServer(iface string, port string, graph *graph.Graph) *HttpServer {
 	h := &HttpServer{
 		graph: graph,
 		iface: iface,
