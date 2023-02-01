@@ -61,6 +61,35 @@ const (
 		},
 	};
 
+	var gccpuper_data = [
+		{ label: "gc.gccpupercentage", data: {{ .GCCPUPercentage }} }
+	];
+
+	var gccpuper_options = {
+		legend: {
+			position: "nw",
+			noColumns: 2,
+			backgroundOpacity: 0.2
+		},
+		yaxis: {
+			tickFormatter: function(val) { return val + "%"; }
+		},
+		xaxis: {
+			tickFormatter: function(val) { return val + "s"; }
+		},
+		selection: {
+			mode: "x"
+		},
+		series: {
+			stack: 0,
+			lines: {
+				show: true,
+				fill:true,
+				lineWidth: 0,
+			},
+		},
+	};
+
 	var clockgraph_data = [
 		{ label: "STW sweep clock", data: {{ .STWSclock }} },
 		{ label: "con mas clock", data: {{ .MASclock }} },
@@ -104,6 +133,7 @@ const (
 	$(document).ready(function() {
 		var datagraph = $.plot("#datagraph", datagraph_data, datagraph_options);
 		var gccycle = $.plot("#gccycle", gccycle_data, gccycle_options);
+		var gccpuper = $.plot("#gccpuper", gccpuper_data, gccpuper_options);
 		var clockgraph = $.plot("#clockgraph", clockgraph_data, timingsgraph_options);
 		var cpugraph = $.plot("#cpugraph", cpugraph_data, timingsgraph_options);
 
@@ -148,6 +178,7 @@ const (
 			overview.setSelection(ranges, true);
 			clockgraph.setSelection(ranges, true);
 			gccycle.setSelection(ranges, true);
+			gccpuper.setSelection(ranges, true);
 			cpugraph.setSelection(ranges, true);
 		});
 
@@ -187,6 +218,27 @@ const (
 			overview.setSelection(ranges, true);
 			datagraph.setSelection(ranges, true);
 			cpugraph.setSelection(ranges, true);
+			gccpuper.setSelection(ranges, true);
+		});
+
+		$("#gccpuper").bind("plotselected", function (event, ranges) {
+
+			// do the zooming
+			$.each(gccpuper.getXAxes(), function(_, axis) {
+				var opts = axis.options;
+				opts.min = ranges.xaxis.from;
+				opts.max = ranges.xaxis.to;
+			});
+			gccpuper.setupGrid();
+			gccpuper.draw();
+			gccpuper.clearSelection();
+
+			// don't fire event on the overview to prevent eternal loop
+
+			overview.setSelection(ranges, true);
+			datagraph.setSelection(ranges, true);
+			cpugraph.setSelection(ranges, true);
+			gccycle.setSelection(ranges, true);
 		});
 
 		$("#cpugraph").bind("plotselected", function (event, ranges) {
@@ -212,6 +264,7 @@ const (
 			datagraph.setSelection(ranges);
 			clockgraph.setSelection(ranges);
 			gccycle.setSelection(ranges);
+			gccpuper.setSelection(ranges);
 			cpugraph.setSelection(ranges);
 		});
 
@@ -236,6 +289,10 @@ const (
 				var gccycle_data = [
 					{ label: "gc.cycle", data: graphData.GCCycle },
 				];
+
+				var gccpuper_data = [
+					{ label: "gc.gccpupercentage", data: graphData.GCCPUPercentage },
+				];
 				var cpugraph_data = [
 					{ label: "STW sweep cpu",      data: graphData.STWScpu },
 					{ label: "con mas assist cpu", data: graphData.MASAssistcpu },
@@ -255,6 +312,10 @@ const (
 				gccycle.setData(gccycle_data);
 				gccycle.setupGrid();
 				gccycle.draw();
+
+				gccpuper.setData(gccpuper_data);
+				gccpuper.setupGrid();
+				gccpuper.draw();
 
 				cpugraph.setData(cpugraph_data);
 				cpugraph.setupGrid();
@@ -367,6 +428,10 @@ dd { margin-left: 160px; }
 	</div>
 
 	<div class="small-graph-container">
+		<div id="gccpuper" class="demo-placeholder"></div>
+	</div>
+
+	<div class="small-graph-container">
 		<div id="clockgraph" class="demo-placeholder"></div>
 	</div>
 
@@ -387,6 +452,7 @@ dd { margin-left: 160px; }
 
 <dt>gc.heapinuse  </dt><dd> heap in use after gc</dd>
 <dt>gc.stack  </dt><dd> stack in use</dd>
+<dt>gc.gccpupercentage  </dt><dd> percent of the available CPU so far has been spent in GC</dd>
 <dt>scvg.inuse    </dt><dd> virtual memory considered in use by the scavenger</dd>
 <dt>scvg.idle     </dt><dd> virtual memory considered unused by the scavenger</dd>
 <dt>scvg.sys      </dt><dd> virtual memory requested from the operating system (should aproximate VSS)</dd>

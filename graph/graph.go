@@ -10,19 +10,19 @@ import (
 type graphPoints [2]float64
 
 type Graph struct {
-	Title                                        string
-	HeapUse, ScvgInuse, ScvgIdle, Stack, GCCycle []graphPoints
-	ScvgSys, ScvgReleased, ScvgConsumed          []graphPoints
-	STWSclock                                    []graphPoints
-	MASclock                                     []graphPoints
-	STWMclock                                    []graphPoints
-	STWScpu                                      []graphPoints
-	MASAssistcpu                                 []graphPoints
-	MASBGcpu                                     []graphPoints
-	MASIdlecpu                                   []graphPoints
-	STWMcpu                                      []graphPoints
-	Tmpl                                         *template.Template `json:"-"`
-	mu                                           sync.RWMutex       `json:"-"`
+	Title                                                         string
+	HeapUse, ScvgInuse, ScvgIdle, Stack, GCCycle, GCCPUPercentage []graphPoints
+	ScvgSys, ScvgReleased, ScvgConsumed                           []graphPoints
+	STWSclock                                                     []graphPoints
+	MASclock                                                      []graphPoints
+	STWMclock                                                     []graphPoints
+	STWScpu                                                       []graphPoints
+	MASAssistcpu                                                  []graphPoints
+	MASBGcpu                                                      []graphPoints
+	MASIdlecpu                                                    []graphPoints
+	STWMcpu                                                       []graphPoints
+	Tmpl                                                          *template.Template `json:"-"`
+	mu                                                            sync.RWMutex       `json:"-"`
 }
 
 var StartTime = time.Now()
@@ -82,6 +82,7 @@ func (g *Graph) AddGCTraceGraphPoint(gcTrace *GCtrace) {
 	g.MASIdlecpu = append(g.MASIdlecpu, graphPoints{elapsedTime, float64(gcTrace.MASIdlecpu)})
 	g.STWMcpu = append(g.STWMcpu, graphPoints{elapsedTime, float64(gcTrace.STWMcpu)})
 	g.GCCycle = append(g.GCCycle, graphPoints{elapsedTime, float64(gcTrace.GCCycle)})
+	g.GCCPUPercentage = append(g.GCCPUPercentage, graphPoints{elapsedTime, float64(gcTrace.GCCPUPercentage)})
 }
 
 func (g *Graph) AddScavengerGraphPoint(scvg *scvgtrace) {
