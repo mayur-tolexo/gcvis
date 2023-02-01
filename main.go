@@ -37,7 +37,7 @@ func main() {
 	var subcommand *exec.SubCommand
 
 	flag.Parse()
-	if filename != nil {
+	if *filename != "" {
 		file, err := os.Open(*filename)
 		if err != nil {
 			fmt.Println(err)
@@ -50,9 +50,8 @@ func main() {
 			if terminal.IsTerminal(int(os.Stdin.Fd())) {
 				flag.Usage()
 				return
-			} else {
-				pipeRead = os.Stdin
 			}
+			pipeRead = os.Stdin
 		} else {
 			subcommand = exec.NewSubCommand(flag.Args())
 			pipeRead = subcommand.PipeRead
@@ -91,7 +90,7 @@ func main() {
 		case output := <-parser.NoMatchChan:
 			fmt.Fprintln(os.Stderr, output)
 		case <-parser.Done:
-			if filename == nil {
+			if *filename != "" {
 				if parser.Err != nil {
 					fmt.Fprintf(os.Stderr, parser.Err.Error())
 					os.Exit(1)
